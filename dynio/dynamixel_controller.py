@@ -166,6 +166,8 @@ class DynamixelMotor:
     def __init__(self, dxl_id, dxl_io, json_file, protocol=1, control_table_protocol=None):
         """Initializes a new DynamixelMotor object"""
 
+        self.debug_mode = False
+        self.debug_position = 0
         # protocol 2 series motors can run using protocol 1, but still use the new control table.
         # this sets the control table choice to the default if one is not explicitly requested.
         if protocol == 1 or control_table_protocol is None:
@@ -277,6 +279,8 @@ class DynamixelMotor:
     def set_position(self, position):
         """Sets the goal position of the motor"""
         self.write_control_table("Goal_Position", position)
+        if self.debug_mode:
+            self.debug_position = position
 
     def set_angle(self, angle):
         """Sets the goal position of the motor with a given angle in degrees"""
@@ -314,3 +318,13 @@ class DynamixelMotor:
     def torque_disable(self):
         """Disables motor torque"""
         self.write_control_table("Torque_Enable", 0)
+
+    def set_debug(self):
+        """Sets the motor object to debug mode for tracking position values"""
+        self.debug_mode = True
+
+    def debug(self):
+        """Displays debug position information if set to debug mode already"""
+        if not self.debug_mode:
+            return
+        print("Requested position: " + str(self.debug_position) + " | Actual position: " + str(self.get_position()))
