@@ -20,7 +20,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="dynamixel_controller",
-    version='0.9.0',
+    version='0.9.1',
     packages=find_packages(),
     author="Hunter Halloran (Jyumpp)",
     author_email="hdh20267@uga.edu",
