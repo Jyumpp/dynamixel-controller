@@ -371,7 +371,7 @@
         1
       ]
     },
-    "Values:": {
+    "Values": {
       "Min_Position": 0,
       "Max_Position": 4095,
       "Max_Angle": 360
