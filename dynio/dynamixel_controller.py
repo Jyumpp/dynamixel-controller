@@ -16,6 +16,7 @@
 
 # Author: Hunter Halloran (Jyumpp)
 
+from __future__ import division
 from dynamixel_sdk import *
 import json
 import pkg_resources
