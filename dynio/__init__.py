@@ -17,3 +17,4 @@
 # Author: Hunter Halloran (Jyumpp)
 
 import dynio.dynamixel_controller as dxl
+from dynio.dynamixel_controller import *

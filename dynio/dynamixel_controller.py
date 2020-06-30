@@ -30,6 +30,10 @@ def dummy_lock():
     yield None
 
 
+def manual_threading_generator(read, write):
+    return [read, write]
+
+
 class DynamixelIO:
     """Creates communication handler for Dynamixel motors"""
 
@@ -37,11 +41,17 @@ class DynamixelIO:
                  device_name='/dev/ttyUSB0',
                  baud_rate=57600,
                  manual_threading=False):
+        if manual_threading:
+            manual_threading = [True, True]
+        elif not manual_threading:
+            manual_threading = [False, False]
+
         if device_name is None:
             return
         self.port_handler = PortHandler(device_name)
         self.packet_handler = [PacketHandler(1), PacketHandler(2)]
-        self.lock = threading.Lock() if not manual_threading else None
+        self.lock = threading.Lock()
+        self.manual_threading = manual_threading
         if not self.port_handler.setBaudRate(baud_rate):
             raise (NameError("BaudChangeError"))
 
@@ -61,7 +71,7 @@ class DynamixelIO:
         dxl_error = 0
 
         # This ensures thread safety to allow the same controller to work in multiple threads on the same process
-        with self.lock if self.lock is not None else dummy_lock():
+        with self.lock if not self.manual_threading[1] else dummy_lock():
             # the following has to be done inelegantly due to dynamixel sdk having separate functions per packet size.
             # future versions of this library may replace usage of the dynamixel sdk to increase efficiency and remove
             # this bulky situation.
@@ -83,7 +93,7 @@ class DynamixelIO:
         dxl_error = 0
 
         # This ensures thread safety to allow the same controller to work in multiple threads on the same process
-        with self.lock if self.lock is not None else dummy_lock():
+        with self.lock if not self.manual_threading[0] else dummy_lock():
             # the following has to be done inelegantly due to dynamixel sdk having separate functions per packet size.
             # future versions of this library may replace usage of the dynamixel sdk to increase efficiency and remove
             # this bulky situation.
