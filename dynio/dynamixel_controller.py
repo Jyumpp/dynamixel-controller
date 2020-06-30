@@ -22,6 +22,7 @@ import json
 import pkg_resources
 from deprecation import deprecated
 import threading
+import contextlib
 
 
 class DynamixelIO:
@@ -29,17 +30,22 @@ class DynamixelIO:
 
     def __init__(self,
                  device_name='/dev/ttyUSB0',
-                 baud_rate=57600):
+                 baud_rate=57600,
+                 manual_threading=False):
         if device_name is None:
             return
         self.port_handler = PortHandler(device_name)
         self.packet_handler = [PacketHandler(1), PacketHandler(2)]
-        self.lock = threading.Lock()
+        self.lock = threading.Lock() if not manual_threading else self.dummy_lock()
         if not self.port_handler.setBaudRate(baud_rate):
             raise (NameError("BaudChangeError"))
 
         if not self.port_handler.openPort():
             raise (NameError("PortOpenError"))
+
+    @contextlib.contextmanager
+    def dummy_lock(self):
+        yield None
 
     def __check_error(self, protocol, dxl_comm_result, dxl_error):
         """Prints the error message when not successful"""
