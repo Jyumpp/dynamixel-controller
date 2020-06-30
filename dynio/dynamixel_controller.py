@@ -85,7 +85,6 @@ class DynamixelIO:
                 dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].write4ByteTxRx(self.port_handler, dxl_id,
                                                                                               address, value)
             self.__check_error(protocol, dxl_comm_result, dxl_error)
-            print(self.lock)
 
     def read_control_table(self, protocol, dxl_id, address, size):
         """Returns the held value from a given address in the control table"""
@@ -108,7 +107,6 @@ class DynamixelIO:
                 ret_val, dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].read4ByteTxRx(self.port_handler,
                                                                                                   dxl_id, address)
             self.__check_error(protocol, dxl_comm_result, dxl_error)
-            print(self.lock)
             return ret_val
 
     def new_motor(self, dxl_id, json_file, protocol=2, control_table_protocol=None):
