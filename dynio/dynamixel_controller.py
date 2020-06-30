@@ -41,9 +41,9 @@ class DynamixelIO:
                  device_name='/dev/ttyUSB0',
                  baud_rate=57600,
                  manual_threading=False):
-        if manual_threading:
+        if isinstance(manual_threading, bool) and manual_threading:
             manual_threading = [True, True]
-        elif not manual_threading:
+        elif isinstance(manual_threading, bool) and not manual_threading:
             manual_threading = [False, False]
 
         if device_name is None:
