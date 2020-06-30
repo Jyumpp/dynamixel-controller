@@ -21,6 +21,7 @@ from dynamixel_sdk import *
 import json
 import pkg_resources
 from deprecation import deprecated
+import threading
 
 
 class DynamixelIO:
@@ -33,6 +34,7 @@ class DynamixelIO:
             return
         self.port_handler = PortHandler(device_name)
         self.packet_handler = [PacketHandler(1), PacketHandler(2)]
+        self.lock = threading.Lock()
         if not self.port_handler.setBaudRate(baud_rate):
             raise (NameError("BaudChangeError"))
 
@@ -51,19 +53,21 @@ class DynamixelIO:
         dxl_comm_result = 0
         dxl_error = 0
 
-        # the following has to be done inelegantly due to the dynamixel sdk having separate functions per packet size.
-        # future versions of this library may replace usage of the dynamixel sdk to increase efficiency and remove this
-        # bulky situation.
-        if size == 1:
-            dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].write1ByteTxRx(self.port_handler, dxl_id,
-                                                                                          address, value)
-        elif size == 2:
-            dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].write2ByteTxRx(self.port_handler, dxl_id,
-                                                                                          address, value)
-        elif size == 4:
-            dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].write4ByteTxRx(self.port_handler, dxl_id,
-                                                                                          address, value)
-        self.__check_error(protocol, dxl_comm_result, dxl_error)
+        # This ensures thread safety to allow the same controller to work in multiple threads on the same process
+        with self.lock:
+            # the following has to be done inelegantly due to dynamixel sdk having separate functions per packet size.
+            # future versions of this library may replace usage of the dynamixel sdk to increase efficiency and remove
+            # this bulky situation.
+            if size == 1:
+                dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].write1ByteTxRx(self.port_handler, dxl_id,
+                                                                                              address, value)
+            elif size == 2:
+                dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].write2ByteTxRx(self.port_handler, dxl_id,
+                                                                                              address, value)
+            elif size == 4:
+                dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].write4ByteTxRx(self.port_handler, dxl_id,
+                                                                                              address, value)
+            self.__check_error(protocol, dxl_comm_result, dxl_error)
 
     def read_control_table(self, protocol, dxl_id, address, size):
         """Returns the held value from a given address in the control table"""
@@ -71,20 +75,22 @@ class DynamixelIO:
         dxl_comm_result = 0
         dxl_error = 0
 
-        # the following has to be done inelegantly due to the dynamixel sdk having separate functions per packet size.
-        # future versions of this library may replace usage of the dynamixel sdk to increase efficiency and remove this
-        # bulky situation.
-        if size == 1:
-            ret_val, dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].read1ByteTxRx(self.port_handler,
+        # This ensures thread safety to allow the same controller to work in multiple threads on the same process
+        with self.lock:
+            # the following has to be done inelegantly due to dynamixel sdk having separate functions per packet size.
+            # future versions of this library may replace usage of the dynamixel sdk to increase efficiency and remove
+            # this bulky situation.
+            if size == 1:
+                ret_val, dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].read1ByteTxRx(self.port_handler,
                                                                                                   dxl_id, address)
-        elif size == 2:
-            ret_val, dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].read2ByteTxRx(self.port_handler,
+            elif size == 2:
+                ret_val, dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].read2ByteTxRx(self.port_handler,
                                                                                                   dxl_id, address)
-        elif size == 4:
-            ret_val, dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].read4ByteTxRx(self.port_handler,
+            elif size == 4:
+                ret_val, dxl_comm_result, dxl_error = self.packet_handler[protocol - 1].read4ByteTxRx(self.port_handler,
                                                                                                   dxl_id, address)
-        self.__check_error(protocol, dxl_comm_result, dxl_error)
-        return ret_val
+            self.__check_error(protocol, dxl_comm_result, dxl_error)
+            return ret_val
 
     def new_motor(self, dxl_id, json_file, protocol=2, control_table_protocol=None):
         """Returns a new DynamixelMotor object of a given protocol with a given control table"""
@@ -306,7 +312,7 @@ class DynamixelMotor:
                 return -1
             if current > 1023:
                 # protocol 1 uses 1's compliment rather than 2's compliment for negative numbers.
-                current -= 1023
+                current -= 1024
                 current *= -1
             return current
         elif self.CONTROL_TABLE_PROTOCOL == 2:
